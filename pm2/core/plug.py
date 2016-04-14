@@ -11,6 +11,8 @@ class Plug:
         self.mplug = mplug
         self.node = node
 
+    ## value ##
+
     def getValue(self):
         return mc.getAttr(self.name)
 

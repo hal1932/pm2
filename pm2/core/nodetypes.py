@@ -29,6 +29,8 @@ class DependNode:
     def hasFn(self, type):
         return self.mobj.hasFn(type)
 
+    ## attribute ##
+
     def hasAttr(self, attrName):
         return self.fn.hasAttribute(attrName)
 
@@ -42,6 +44,8 @@ class DependNode:
 
     def setAttr(self, attrName, value):
         mc.setAttr(self.name + "." + attrName, value)
+
+    ## plugs ##
 
     def hasPlug(self, plugName):
         return self.hasAttr(plugName)
@@ -87,6 +91,8 @@ class DependNode:
         except:
             return []
 
+    ## find from scene ##
+
     @staticmethod
     def find(type, predicate=None):
         iter = om.MItDependencyNodes(type)
@@ -107,6 +113,8 @@ class DependNode:
             DependNode._gather(nodes, obj, fn, predicate)
             iter.next()
         return nodes
+
+    ## private ##
 
     @staticmethod
     def _collect(iter, type, predicate):
