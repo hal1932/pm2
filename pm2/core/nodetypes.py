@@ -140,36 +140,63 @@ class DependNode:
     ## find from scene ##
 
     @staticmethod
-    def find(type, predicate=None):
-        iter = om.MItDependencyNodes(type)
-        return DependNode._collect(iter, type, predicate)
+    def find(target, predicate=None):
+        return DependNode._findImpl(target, predicate, False)
 
     @staticmethod
-    def findSelected(type, predicate=None):
-        selections = om.MSelectionList()
-        om.MGlobal.getActiveSelectionList(selections)
-        iter = om.MItSelectionList(selections)
+    def findFirst(target, predicate=None):
+        return DependNode._findImpl(target, predicate, True)
+    
+    @staticmethod
+    def _findImpl(target, predicate, first):
+        if isinstance(target, str): # target is name
+            return DependNode._findImpl(om.MFn.kNamedObject, lambda _, fn: fn.name() == target, first)
+        elif isinstance(target, int): # target is type
+            iter = om.MItDependencyNodes(target)
+            return DependNode._collect(iter, predicate, first)
 
-        nodes = []
-        fn = om.MFnDependencyNode()
-        while not iter.isDone():
-            obj = om.MObject()
-            iter.getDependNode(obj)
-            fn.setObject(obj)
-            DependNode._gather(nodes, obj, fn, predicate)
-            iter.next()
-        return nodes
+    @staticmethod
+    def findSelected(target = None, predicate=None):
+        return DependNode._findSelectedImpl(target, predicate, False)
+
+    @staticmethod
+    def findFirstSelected(target = None, predicate=None):
+        return DependNode._findSelectedImpl(target, predicate, True)
+
+    @staticmethod
+    def _findSelectedImpl(target, predicate, first):
+        if target is None:
+            target = om.MFn.kInvalid
+
+        if isinstance(target, str): # target is name
+            return DependNode._findSelectedImpl(om.MFn.kNamedObject, lambda _, fn: fn.name() == target, first)
+        elif isinstance(target, int): # target is type
+            selections = om.MSelectionList()
+            om.MGlobal.getActiveSelectionList(selections)
+            iter = om.MItSelectionList(selections)
+
+            nodes = []
+            fn = om.MFnDependencyNode()
+            while not iter.isDone():
+                obj = om.MObject()
+                iter.getDependNode(obj)
+                fn.setObject(obj)
+                if DependNode._gather(nodes, obj, fn, predicate) and first:
+                    return nodes[0]
+                iter.next()
+            return nodes
 
     ## private ##
 
     @staticmethod
-    def _collect(iter, type, predicate):
+    def _collect(iter, predicate, first):
         nodes = []
         fn = om.MFnDependencyNode()
         while not iter.isDone():
             obj = iter.item()
             fn.setObject(obj)
-            DependNode._gather(nodes, obj, fn, predicate)
+            if DependNode._gather(nodes, obj, fn, predicate) and first:
+                return nodes[0]
             iter.next()
         return nodes
 
@@ -178,8 +205,11 @@ class DependNode:
         if predicate is None:
             node = DependNode(obj)
             nodes.append(node)
+            return True
         else:
             if predicate(obj, fn):
                 node = DependNode(obj)
                 nodes.append(node)
+                return True
+        return False
 
