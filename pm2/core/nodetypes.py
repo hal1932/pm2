@@ -26,8 +26,16 @@ class DependNode:
         self.mobj = obj
         self._fn = None
 
+    @staticmethod
+    def fromName(nodeName):
+        return DependNode.find(om.MFn.kNamedObject, lambda _, fn: fn.name() == nodeName)[0]
+
     def hasFn(self, type):
         return self.mobj.hasFn(type)
+
+    def delete(self):
+        mc.delete(self)
+        self.mobj = None
 
     ## attribute ##
 
@@ -44,6 +52,15 @@ class DependNode:
 
     def setAttr(self, attrName, value):
         mc.setAttr(self.name + "." + attrName, value)
+
+    def addAttr(self, attrType, dataType, longName, shortName):
+        if not attrType is None:
+            mc.addAttr(self.name, attributeType = attrType, longName = longName, shortName = shortName)
+        else:
+            mc.addAttr(self.name, dataType = dataType, longName = longName, shortName = shortName)
+
+    def deleteAttr(self, attrName):
+        mc.deleteAttr(self.name + "." + attrName)
 
     ## plugs ##
 
@@ -90,6 +107,35 @@ class DependNode:
             return self.getConnectedPlugs(predicate)
         except:
             return []
+
+    ## connected nodes ##
+
+    def findSourceNodes(self, predicate=None):
+        return self.findConnectedNodes(True, False, predicate)
+
+    def findDestinationNodes(self, predicate=None):
+        return self.findConnectedNodes(False, True, predicate)
+
+    def findConnectedNodes(self, asDestination, asSource, predicate=None):
+        plugs = om.MPlugArray()
+        self.fn.getConnections(plugs)
+
+        nodes = []
+        for i in xrange(plugs.length()):
+            plug = plugs[i]
+            connectedPlus = om.MPlugArray()
+            plug.connectedTo(connectedPlus, asDestination, asSource)
+
+            for j in xrange(connectedPlus.length()):
+                connectedPlug = connectedPlus[j]
+                if predicate is None:
+                    node = DependNode(connectedPlug.node())
+                    nodes.append(node)
+                else:
+                    if predicate(connectedPlug):
+                        node = DependNode(connectedPlug.node())
+                        nodes.append(node)
+        return nodes
 
     ## find from scene ##
 
