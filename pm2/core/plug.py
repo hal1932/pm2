@@ -14,5 +14,10 @@ class Plug:
     def getValue(self):
         return mc.getAttr(self.name)
 
+    def findValue(self):
+        if mc.hasAttr(self.name):
+            return self.getValue()
+        return None
+
     def setValue(self, value):
         mc.setAttr(self.name, value)
