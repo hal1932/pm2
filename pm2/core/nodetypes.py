@@ -35,15 +35,25 @@ class DependNode:
     def getAttr(self, attrName):
         return mc.getAttr(self.name + "." + attrName)
 
+    def findAttr(self, attrName):
+        if self.hasAttr(attrName):
+            return self.getAttr(attrName)
+        return None
+
     def setAttr(self, attrName, value):
         mc.setAttr(self.name + "." + attrName, value)
 
     def hasPlug(self, plugName):
         return self.hasAttr(plugName)
 
-    def findPlug(self, plugName):
+    def getPlug(self, plugName):
         mplug = self.fn.findPlug(plugName)
         return Plug(mplug, self)
+
+    def findPlug(self, plugName):
+        if self.hasPlug(plugName):
+            return self.getPlug(plugName)
+        return None
 
     def findPlugs(self, predicate=None):
         plugs = []
@@ -57,10 +67,9 @@ class DependNode:
                     plugs.append(Plug(mplug, self))
         return plugs
 
-    def findConnectedPlugs(self, predicate=None):
+    def getConnectedPlugs(self, predicate=None):
         mplugs = om.MPlugArray()
-        a = self.fn.getConnections(mplugs)
-        print a
+        self.fn.getConnections(mplugs)
 
         plugs = []
         for i in xrange(mplugs.length()):
@@ -71,6 +80,12 @@ class DependNode:
                 if predicate(mplug):
                     plugs.append(Plug(mplug, self))
         return plugs
+
+    def findConnectedPlugs(self, predicate=None):
+        try:
+            return self.getConnectedPlugs(predicate)
+        except:
+            return []
 
     @staticmethod
     def find(type, predicate=None):
